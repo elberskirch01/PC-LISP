@@ -176,13 +176,13 @@ struct conscell * bucatch(struct conscell *form)
            {   if ((tag==NULL)||(tag->celltype!=CONSCELL)) tag = enlist(tag);
                temp = new(CONSCELL);
 #              if JMP_BUFISARRAY                              /* no & */
-                  temp->carp = LIST(newintop((long)state));
+                  temp->carp = LIST(newintop((lifix_t)state));
 #              else                                           /* need & */
-                  temp->carp = LIST(newintop((long)(&state)));
+                  temp->carp = LIST(newintop((lifix_t)(&state)));
 #              endif
                temp->linenum = lillev;                       /* remember lexical level */
                temp->cdrp = new(CONSCELL);
-               temp->cdrp->carp = LIST(newintop((long) emytop));
+               temp->cdrp->carp = LIST(newintop((lifix_t) emytop));
                temp->cdrp->cdrp = tag;
                PushCatchStack(catchstkhold,temp);
                temp = eval(exp);              /* may return to setjmp() */
@@ -228,13 +228,13 @@ struct conscell * buerrset(struct conscell *form)
            if (!setjmp(state))
            {   temp = new(CONSCELL);
 #              if JMP_BUFISARRAY                              /* no & */
-                  temp->carp = LIST(newintop((long)state));
+                  temp->carp = LIST(newintop((lifix_t)state));
 #              else                                           /* need & */
-                  temp->carp = LIST(newintop((long)(&state)));
+                  temp->carp = LIST(newintop((lifix_t)(&state)));
 #              endif
                temp->linenum = lillev;                       /* remember lexical level */
                temp->cdrp = new(CONSCELL);
-               temp->cdrp->carp = LIST(newintop((long) emytop));
+               temp->cdrp->carp = LIST(newintop((lifix_t) emytop));
                temp->cdrp->cdrp = tag;
                PushCatchStack(errstkhold,temp);
                temp = eval(exp);              /* may return to setjmp() */

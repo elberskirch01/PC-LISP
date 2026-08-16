@@ -15,6 +15,7 @@
 struct conscell * bumax(struct conscell *form)
 {      struct conscell *maxsofar,*op; int first = 1, result;
        if (form == NULL) return(newintop(0L));
+       maxsofar = NULL;
        while (form != NULL)
        {      op = (struct conscell *) form->carp;
               if (first)

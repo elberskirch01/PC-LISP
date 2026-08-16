@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <signal.h>
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
 #include <sgtty.h>
 #include <sys/wait.h>
 #include <sys/time.h>
@@ -21,7 +21,7 @@
  ** first_process if TRUE causes any of these *process commands to add  **
  ** a sigchld handler if there is not one so as to avoid <defunc> pid's **
  *************************************************************************/
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
 static void sigchld_handler(int sig)
 {      int status; struct rusage rusage;
        (void)sig;
@@ -41,7 +41,7 @@ static void sigchld_handler(int sig)
  *************************************************************************/
 struct conscell * buprocess(struct conscell *form)
 {
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
        char *str, *s, *t; FILE *fd_pr = NULL, *fd_pw = NULL;
        struct conscell *h, *n, *buexec(struct conscell *);
        char fname[MAXATOMSIZE + 50]; int i, tty, tty2, pid;
@@ -199,7 +199,8 @@ found:
        */
        xpop(1);
        return(h);
+er:    
 #endif /*  _MSC_VER  */
-er:    ierror("*process");  /*  doesn't return  */
+       ierror("*process");  /*  doesn't return  */
        return NULL;   /*  keep compiler happy  */
 }

@@ -12,7 +12,7 @@
  ** budivide:Divide the first from the rest of list, ret res.(0 defualt)**
  *************************************************************************/
 struct conscell * budivide(struct conscell *form)
-{      struct fixcell *op; long int quot = 1L; int first = 1;
+{      struct fixcell *op; lifix_t quot = 1L; int first = 1;
        xpush(form);
        while (form != NULL)
        {      op = (struct fixcell *) form->carp;

@@ -3,7 +3,7 @@
  | PC-LISP (C) 1984-1990 Peter J.Ashwood-Smith
  */
 #include <stdio.h>
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #include <time.h>
 #else
 #include <sys/time.h>
@@ -23,7 +23,7 @@
 struct conscell * butimeev(struct conscell *form)
 {
        double diff;
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
        clock_t start, end;
        if (!form || form->cdrp) goto er;
        start = clock();

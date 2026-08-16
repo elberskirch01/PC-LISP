@@ -15,12 +15,16 @@
  *************************************************************************/
 struct conscell * butimestring(struct conscell *form)
 {
-       time_t fix; int len;
+       lifix64_t fix; int len;
+       time_t t;
        char *s;
-       fix = time(NULL);
-       if (form != NULL)
-          if ((form->cdrp != NULL)||(!GetFix(form->carp,&fix))) goto er;
-       s = ctime(&fix);
+       if (form != NULL) {
+          if ((form->cdrp != NULL)||(!GetFix64(form->carp,&fix))) goto er;
+          t = (time_t) fix;
+       } else {
+          t = time(NULL);
+       }
+       s = ctime(&t);
        if (s == NULL) goto er;
        len = strlen(s);
        if (len <= 0) goto er;

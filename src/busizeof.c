@@ -19,25 +19,25 @@ struct conscell * busizeof(struct conscell *form)
        if ((form!=NULL)&&(form->carp != NULL)&&(form->cdrp == NULL))
        {    if (GetString(form->carp,&exp))
             {   if (strcmp(exp,"list") == 0)
-                    return(newintop((long int) sizeof(struct conscell)));
+                    return(newintop((lifix_t) sizeof(struct conscell)));
                 if (strcmp(exp,"port") == 0)
-                    return(newintop((long int) sizeof(struct filecell)));
+                    return(newintop((lifix_t) sizeof(struct filecell)));
                 if (strcmp(exp,"flonum") == 0)
-                    return(newintop((long int) sizeof(struct realcell)));
+                    return(newintop((lifix_t) sizeof(struct realcell)));
                 if (strcmp(exp,"fixnum") == 0)
-                    return(newintop((long int) sizeof(struct fixcell)));
+                    return(newintop((lifix_t) sizeof(struct fixcell)));
                 if (strcmp(exp,"string") == 0)
-                    return(newintop((long int) sizeof(struct stringcell)));
+                    return(newintop((lifix_t) sizeof(struct stringcell)));
                 if (strcmp(exp,"symbol") == 0)
-                    return(newintop((long int) sizeof(struct alphacell)));
+                    return(newintop((lifix_t) sizeof(struct alphacell)));
                 if (strcmp(exp,"hunk") == 0)
-                    return(newintop((long int) sizeof(struct hunkcell)));
+                    return(newintop((lifix_t) sizeof(struct hunkcell)));
                 if (strcmp(exp,"array") == 0)
-                    return(newintop((long int) sizeof(struct arraycell)));
+                    return(newintop((lifix_t) sizeof(struct arraycell)));
                 if (strcmp(exp,"clisp") == 0)
-                    return(newintop((long int) sizeof(struct clispcell)));
+                    return(newintop((lifix_t) sizeof(struct clispcell)));
                 if (strcmp(exp,"fixfix") == 0)
-                    return(newintop((long int) sizeof(struct fixfixcell)));
+                    return(newintop((lifix_t) sizeof(struct fixfixcell)));
             };
        };
        ierror("sizeof");  /*  doesn't return  */

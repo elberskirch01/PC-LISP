@@ -9,16 +9,18 @@
 
 
 /*************************************************************************
- ** butimes: Multiply the list of reals and return result.   (0 defualt)**
+ ** butimes: Multiply the list of reals and return result.   (0 default)**
  *************************************************************************/
 struct conscell * butimes(struct conscell *form)
-{      struct fixcell *op; long int prod = 1L;
+{      struct fixcell *op; lifix_t prod = 1L;
        xpush(form);
        while (form != NULL)
        {      op = (struct fixcell *) form->carp;
               if ((op != NULL)&&(op->celltype == FIXATOM))
+	      {
                    prod *= op->atom;
-              else
+              }
+	      else
                    ierror("*");
               form = form->cdrp;
        };

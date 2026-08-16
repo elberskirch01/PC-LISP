@@ -19,5 +19,5 @@ struct conscell * buproduct(struct conscell *form)
 	   form = form->cdrp;
        }
        if (isflt) return(newrealop(prod));
-       return(newintop((long) prod));
+       return(newintop((lifix_t) prod));
 }

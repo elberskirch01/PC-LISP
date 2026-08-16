@@ -15,7 +15,7 @@ struct conscell * buoneplus(struct conscell *form)
        if ((form != NULL)&&(form->cdrp == NULL))
           if ((temp = form->carp) != NULL)
              if (temp->celltype == FIXATOM)
-                return(newintop((long)FIX(temp)->atom + 1L));
+                return(newintop((lifix_t)FIX(temp)->atom + 1L));
        ierror("1+");  /*  doesn't return  */
        return NULL;   /*  keep compiler happy  */
 }
