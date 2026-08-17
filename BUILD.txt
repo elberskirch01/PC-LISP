@@ -14,12 +14,23 @@ To build on Linux or Mac:
 	cd src
 	make
 
-On Windows do:
+On Windows with msys64 and ucrt64 do:
+
+	cd src
+	make -f Makeming64
+
+On Windows with 32bit mingw do:
+
+	cd src
+	make -f Makemingw32
+
+On Windows otherwise try:
 
 	cd src
 	nmake -f Makefile.msc
 
-You will end up with a file name "pc-lisp".  That is the system.
+You will end up with a file name "pc-lisp" (or PC-LISP.exe on Windows).  
+That is the system.
 
 Upon execution of pc-lisp, it will attempt to load a file named
 "pclisprc.l" in the current directory if it exists.  Any desired
