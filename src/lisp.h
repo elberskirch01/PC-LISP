@@ -757,7 +757,6 @@ struct  fixcell                                 /* lisp 32bit integer cell */
 {               unsigned celltype  : 4;         /* celltype = REALCELL */
 		unsigned markbit   : 1;         /* markbit = SET or CLEAR */
 		unsigned travbit   : 1;         /* Dummy invert traversal bit*/
-		unsigned dummy1;
 		lifix_t atom;                  /* value of the fixnum */
 };
 
