@@ -56,7 +56,8 @@
 #define         ECHO         1                  /* processfile() flags */
 #define         NOECHO       0                  /* parameter */
 
-static int CanStoreInLong(double d);
+static int CanStoreInFix(double d);
+static int CanStoreInFloat(double d);
 static void WriteHunkBase(struct hunkcell *hunk, int index, char *ptr);
 static struct conscell *TakeSexpression(struct filecell *port);
 static struct conscell *TakeList(struct filecell *port);
@@ -911,12 +912,16 @@ int GetNumberOrString(struct conscell *l, char **where)
                     *where = STRING(l)->atom;
                     return(1);
           case FIXATOM:
-                    sprintf(numbuf,"%ld",FIX(l)->atom);
+#ifdef LIFIX64
+                    sprintf(numbuf,"%lld", (lifix64_t) FIX(l)->atom);
+#else		    
+                    sprintf(numbuf,"%ld", (lifix32_t) FIX(l)->atom);
+#endif
                     *where = numbuf;
                     return(1);
           case REALATOM:                           /* mimic the patom code */
                     v = REAL(l)->atom;
-                    if (CanStoreInLong(v))
+                    if (CanStoreInFloat(v))
                         sprintf(numbuf,"%.1lf",v);
                     else
                         sprintf(numbuf,"%lg",v);
@@ -984,16 +989,30 @@ struct conscell * MakePort(FILE *fd, struct alphacell *at)
 }
 
 /****************************************************************************
- ** CanStoreInLong(d) Will return '1' if the double 'd' can be stored in a **
+ ** CanStoreInFloat(d) Will return '1' if the double 'd' can be stored in a **
  ** long without loss of precision. If the double is greater than MAXLONG  **
  ** or less than MINLONG then it cannot be stored in a double. If it is in **
  ** this range then we check to see if it is whole or not. If non whole    **
  ** it cannot be stored in a long without loosing the fraction.            **
  ****************************************************************************/
-static int CanStoreInLong(double d)
-{   long l;
-    if ((d > (double)MAXLONG)||(d < (double)MINLONG)) return(0);
-    l = (long) d;
+static int CanStoreInFloat(double d)
+{   lifix_t l;
+    if ((d > (double)MAXREALTOFLOAT)||(d < (double)MINREALTOFLOAT)) return(0);
+    l = (lifix_t) d;
+    return(((double) l) == d);
+}
+
+/****************************************************************************
+ ** CanStoreInFix(d) Will return '1' if the double 'd' can be stored in a **
+ ** lifix_t without loss of precision. If the double is greater than MAXREALTOFIX  **
+ ** or less than MINREALTOFIX then it cannot be stored in a double. If it is in **
+ ** this range then we check to see if it is whole or not. If non whole    **
+ ** it cannot be stored in a integer without loosing the fraction.            **
+ ****************************************************************************/
+static int CanStoreInFix(double d)
+{   lifix_t l;
+    if ((d > (double)MAXREALTOFIX)||(d < (long double)MINREALTOFIX)) return(0);
+    l = (lifix_t) d;
     return(((double) l) == d);
 }
 
@@ -1011,19 +1030,20 @@ int HasFloatPart(char *s)
 }
 
 /****************************************************************************
- ** ConvertToBest(s,&flonum,&fixnum) : Convert the ascii string in s to the**
+ ** Convertfixnum
+ (s,&flonum,&fixnum) : Convert the ascii string in s to the**
  ** best possible representation either a double, or a long int. We store   **
  ** the converted number in the location pointed to by the second or third **
  ** parameter as appropriate and return a value of REALATOM  or FIXATOM to **
  ** indicate which type was chosen.                                        **
  ****************************************************************************/
-int ConvertToBest(char *s, double *flonum, long int *fixnum)
+int ConvertToBest(char *s, double *flonum, lifix_t *fixnum)
 {     char junk;
       if (sscanf(s,"%lf%c",flonum,&junk)==1) {      /* extract a double number */
           if (HasFloatPart(s))                      /* if it has . e or E then*/
              return(REALATOM);                      /* user wants it to be real*/
-          if (CanStoreInLong(*flonum)) {            /* can it be a long w/o loss */
-              *fixnum = (long) *flonum;             /* of precision? If so do it */
+          if (CanStoreInFix(*flonum)) {            /* can it be a long w/o loss */
+              *fixnum = (lifix_t) *flonum;             /* of precision? If so do it */
               return(FIXATOM);                      /* and return fixatom else */
           }                                         /* precision was lost so */
           return(REALATOM);                         /* make it a float. */
@@ -1048,7 +1068,7 @@ int ConvertToBest(char *s, double *flonum, long int *fixnum)
  ****************************************************************************/
 static struct conscell *takeatom()
 {      if ISREAL()
-       {  struct conscell *work; double flonum; long int fixnum=0L;
+       {  struct conscell *work; double flonum; lifix_t fixnum=0L;
           push(work);
           if (ConvertToBest(buff,&flonum,&fixnum) == REALATOM)
           {   work = LIST(new(REALATOM));
@@ -1239,13 +1259,17 @@ void printatom(FILE *p, struct conscell *l, int how, int *counter)
                  break;
             case CLISPCELL:
                  if (counter == NULL)
+#ifdef LIPTR64		 
+			 fprintf(p,"%%L(%p),C(%p)%%",CLISP(l)->literal,CLISP(l)->code);
+#else
 			 fprintf(p,"%%L(%lx),C(%lx)%%",(long)CLISP(l)->literal,(long)CLISP(l)->code);
+#endif
                  else
                      *counter += 20;
                  break;
             case REALATOM :
                  {   double v = REAL(l)->atom;
-                     if (CanStoreInLong(v))           /* cleaner output */
+                     if (CanStoreInFloat(v))           /* cleaner output */
                      {   sprintf(tbuf,"%.1lf",v);
                          if (counter == NULL)
                              fprintf(p,"%s",tbuf);
@@ -1262,8 +1286,12 @@ void printatom(FILE *p, struct conscell *l, int how, int *counter)
                  };
                  break;
             case FIXATOM :
-                 {   long int v = FIX(l)->atom;
-                     sprintf(tbuf,"%ld",v);
+                 {   lifix_t v = FIX(l)->atom;
+#ifdef LIFIX64
+                     sprintf(tbuf,"%lld",(lifix64_t) v);
+#else
+                     sprintf(tbuf,"%ld",(lifix32_t) v);
+#endif		     
                      if (counter == NULL)
                          fprintf(p,"%s",tbuf);
                      else
@@ -1734,7 +1762,10 @@ static void liargs(int argc, char **argv)
 #if !defined(MACRO)
     int main(int argc, char *argv[])
     {
-	printf("%s%s%s", "PC-LISP V", VERSION, " Copyright (C) Peter J.Ashwood-Smith, 1989-2015\n");
+	printf("%s%s%s\n", 
+	    "PC-LISP V", VERSION, 
+	    " Copyright (C) Peter J.Ashwood-Smith, 1989-2015");
+	 printf ("   - adapted for 64bit pointers and fixnum, 2026-08-16\n");
         zapee = stdin;
         liargs(argc, argv);
         InitMarkStack();

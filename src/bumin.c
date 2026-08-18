@@ -15,6 +15,7 @@
 struct conscell * bumin(struct conscell *form)
 {      struct conscell *minsofar,*op; int first = 1, result;
        if (form == NULL) return(newintop(0L));
+       minsofar = NULL;
        while (form != NULL)
        {      op = (struct conscell *) form->carp;
               if (first)

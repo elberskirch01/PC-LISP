@@ -12,7 +12,7 @@
  ** (+ i1 i2 .... in) Add a list of fixnums and return the result.      **
  *************************************************************************/
 struct conscell * buplus(struct conscell *form)
-{      struct fixcell *op; long int sum = 0L;
+{      struct fixcell *op; lifix_t sum = 0L;
        xpush(form);
        while (form != NULL)
        {      op = (struct fixcell *) form->carp;

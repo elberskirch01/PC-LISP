@@ -14,27 +14,31 @@ To build on Linux or Mac:
 	cd src
 	make
 
-On Windows do:
+On Windows with msys2 and ucrt64 do:
+
+	cd src
+	make -f Makeming64
+
+Running the executable requires, that the *.dll of msys2 are in 
+search path.
+
+On Windows with msys2 and ucrt64, 
+but without using regex, do:
+
+	cd src
+	make -f Makeming64noregex
+
+On Windows with 32bit mingw,
+but without regex, do:
+
+	cd src
+	make -f Makemingw32noregex
+
+On Windows with MSC try:
 
 	cd src
 	nmake -f Makefile.msc
 
-You will end up with a file name "pc-lisp".  That is the system.
-
-Upon execution of pc-lisp, it will attempt to load a file named
-"pclisprc.l" in the current directory if it exists.  Any desired
-initial state of the machine can be placed there.  You may want to
-copy the file "pc-lisp.l" to "pclisprc.l" as a good starting point.
-
-The manual is located in the file pc-lisp.doc
-
-To exit the system use:  (exit)
-
-You can compile a function as follows:
-
-(defun fun (a b) (+ a b))
-
-(setq cfun (assemble (car (ph-optimize (compile fun)))))
-
-Now fun & cfun both add their arguments.
+You will end up with a file name "pc-lisp" (or "PC-LISP.exe" on Windows).  
+That is the system.
 

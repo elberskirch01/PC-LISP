@@ -25,7 +25,7 @@ struct conscell * buexec(struct conscell *form)
            strcat(buff," ");
            form = form->cdrp;
        }
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
        r = newintop(((long)system(buff)));
 #else
        {

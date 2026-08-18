@@ -129,7 +129,7 @@
 
 
 /*  Recent version of Microsoft Visual Studio  */
-#ifdef    _MSC_VER
+#if defined(_MSC_VER) || defined (__MINGW32__)
 #include <limits.h>
 #define   LONGMEMORY              0
 #define   DATALIMITEDTO64K        0             /* stack+data < 64K ? no */
@@ -236,6 +236,38 @@
 #define   HASTCP                  0             /* do we have TCP/IP sockets? Although Linux does, the TCP code is outdated.  Disable for now. */
 #endif
 
+#if defined(__CYGWIN__) && !defined(_WIN32)
+#include <limits.h>
+#define   LONGMEMORY              0
+#define   DATALIMITEDTO64K        0             /* stack+data < 64K ? no */
+#define   MARKCHECK               1
+#define   SIGSEGVWORKS            1
+#define   SIGINTWORKS             1
+#define   SIGFPEWORKS             1
+#define   HASFCLOSEALL            1             /* has fcloseall() in stdio */
+#define   HASMATHERRFUNCTION      0
+#define   WANTERRNOTESTING        1             /* check errno after calls */
+#define   GRAPHICSAVAILABLE       0
+#define   NEEDNLAFTERBREAKEXIT    1
+#define   JMP_BUFISARRAY          1             /* typedef jmp_buf is array */
+#define   DIRSEPSTRING           "/"
+#define   DIRSEPCHAR             '/'
+#define   MAXNEGINT             (long)INT_MIN    /* samllest 'int' value */
+
+#ifndef   MAXINT
+#define   MAXINT                 (long)INT_MAX    /* largest 'int' value */
+#endif
+
+#define   MAXRANDVALUE           MAXINT         /* largest rand() value */
+
+#ifndef   MAXLONG
+#define   MAXLONG                LONG_MAX    /* biggest 'long' value */
+#endif
+
+#define   MINLONG                LONG_MIN    /* smallest 'long' value */
+#define   RE_COMP                 1             /* RE_COMP vs REGCMP selection */
+#define   HASTCP                  0             /* do we have TCP/IP sockets? Although Linux does, the TCP code is outdated.  Disable for now. */
+#endif /* CYGWIN */
 
 #ifdef    __APPLE__
 #include <limits.h>
@@ -426,13 +458,38 @@ void stkovfl(int cause);
 #define   PRETTYWIDTH   75                        /* default pp-form width */
 #define   MAXMETANEST   16                        /* max [] nesting allowed */
 
+#ifdef __MINGW64__
+#define LIPTR64
+#define LIFIX64
+#endif
+
+#ifdef LIFIX64
+#define MAXREALTOFIX  LLONG_MAX
+#define MINREALTOFIX LLONG_MIN
+#define MAXREALTOFLOAT  LLONG_MAX
+#define MINREALTOFLOAT LLONG_MIN
+#else
+#define MAXREALTOFIX  LONG_MAX
+#define MINREALTOFIX LONG_MIN
+#define MAXREALTOFLOAT LONG_MAX
+#define MINREALTOFLOAT LONG_MIN
+#endif
+
+typedef long int lifix32_t;
+typedef long long int lifix64_t;
+#ifdef LIFIX64
+typedef lifix64_t lifix_t;
+#else
+typedef lifix32_t lifix_t;
+#endif
+
 /***************************************************************************
  ** garbage collection stack push and pop routines. The stack 'mystack'   **
  ** contains a pointer to every local variable and parameter. It is much  **
  ** like the stack used by C. Infact the pointers will point into the C   **
  ** stack. When we enter a procedure in which we may cause the garbage    **
  ** collector to gather data, ie a new is invoked. We will xpush all of   **
- ** the arguements, and push all of the local variables. Then when we do  **
+ ** the arguments, and push all of the local variables. Then when we do   **
  ** a return we use fret or xret with the correct number of items that we **
  ** pushed at the entry to the procedure. Note that xret is provided for  **
  ** returns that do some evaluation in the returned argument,in which case**
@@ -615,7 +672,7 @@ extern    void brkhit(void);
  ** points to the element and the cdr pointer points to the rest of the**
  ** elements in the list. celltype=CONSCELL.  The travbit is used when **
  ** doing the garbage collection marking phase. It is used to indicate **
- ** when when a link is inverted. The filecell,hunkcell,stringcell,    **
+ ** when a link is inverted. The filecell,hunkcell,stringcell,         **
  ** realcell, fixcell have dummy travbits in them. This is because all **
  ** of these cells share the same space and size and may be converted  **
  ** from one to another. We require that this bit stay in sync as do   **
@@ -626,6 +683,7 @@ struct  conscell                                /* lisp cons cell */
 		unsigned markbit   : 1;         /* CLEAR or SET  */
 		unsigned travbit   : 1;         /* link invert traversal bit*/
                 unsigned linenum   : 23;        /* line number from file this list came from */
+		unsigned dummy1;
 		struct   conscell  * carp;      /* lisp CAR pointer */
 		struct   conscell  * cdrp;      /* lisp CDR pointer */
 };
@@ -699,7 +757,7 @@ struct  fixcell                                 /* lisp 32bit integer cell */
 {               unsigned celltype  : 4;         /* celltype = REALCELL */
 		unsigned markbit   : 1;         /* markbit = SET or CLEAR */
 		unsigned travbit   : 1;         /* Dummy invert traversal bit*/
-		long int atom;                  /* value of the fixnum */
+		lifix_t atom;                  /* value of the fixnum */
 };
 
 /************************************************************************
@@ -774,7 +832,7 @@ struct  stringcell                              /* lisp string "...." cell */
  ** collection cycle. Since garbage collection is a big hole in the    **
  ** execution of a program I would rather slow down the access of the  **
  ** array than increase the cost of maintaining it. This cell has a    **
- ** size field which is the number of elements in the the hunk. Then   **
+ ** size field which is the number of elements in the hunk. Then       **
  ** the atom pointer points to the first byte of the first pointer in  **
  ** the hunk. These cells are kept in the atomtable by main.c so that  **
  ** heap compaction can proceed quickly. This is because for a given   **
@@ -929,7 +987,7 @@ extern struct conscell   * macroexpand(struct conscell *l);
 #define new(x) newcons(x)                           /* rename new it clashes */
 extern struct conscell   * newcons(int t);
 extern struct alphacell  * newalpha(void);
-extern struct conscell   * newintop(long int val);
+extern struct conscell   * newintop(lifix_t val);
 extern struct conscell   * newfixfixop(long int a, long int b);
 extern struct conscell   * newrealop(double val);
 extern struct conscell   * nreverse(struct conscell *l);
@@ -968,7 +1026,9 @@ extern void    marklist(struct conscell *pres);
 extern void    ioerror(FILE *p);
 extern int     GetFloat(struct conscell *l, double *where);
 extern int     GetString(struct conscell *l, char **where);
-extern int     GetFix(struct conscell *l, long int *where);
+extern int     GetFix64(struct conscell *l, lifix64_t *where);
+extern int     GetFix32(struct conscell *l, lifix32_t *where);
+extern int     GetFix(struct conscell *l, lifix32_t *where);
 extern int     ExtractArray(struct conscell *list, struct conscell **where);
 extern void    HoldStackOperation(int flag);
 extern void    gerror(char *s);
@@ -1035,7 +1095,9 @@ extern int     lillev;                    /* lexical level for (go..) validation
   /*** GLOBAL VARIABLES ***/
 
 extern jmp_buf  env;                      /* break or error return point */
+#if 0
 extern int      errno;                    /* normal libc global error number */
+#endif
 extern int      marking;                  /* '1' means GC is marking 0 not */
 extern FILE  *  zapee;                    /* last input port for (zapline) */
 extern struct conscell *lifreecons;       /* list of all free cons cells */

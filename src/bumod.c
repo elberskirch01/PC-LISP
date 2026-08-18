@@ -21,7 +21,7 @@ struct conscell * bumod(struct conscell *form)
                 if (op2->atom != 0) {
                     form = form->cdrp;
                     if ((form == NULL)&&(op2->celltype == FIXATOM))
-                       xret(newintop((long)(op1->atom % op2->atom)),1);
+                       xret(newintop((lifix_t)(op1->atom % op2->atom)),1);
                 }
            }
        }

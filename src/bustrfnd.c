@@ -4,7 +4,7 @@
  */
 #include <stdio.h>
 #include "lisp.h"
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__MINGW32__)
 #include <regex.h>
 #endif
 
@@ -14,7 +14,7 @@
  |  because SYSV only handles a static pattern of its own hence we must be
  |  compatible with the minimum system.
  */
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__MINGW32__)
 static regex_t pattern;
 static int reUsed = 0;
 #else
@@ -69,7 +69,7 @@ struct conscell * bustrsetpat(struct conscell *form)
              *p++ = '$'; *p = '\0';              /* match end of string '$' */
          } else
              strcpy(expr, s);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__MINGW32__)
 	 if (reUsed)
              regfree(&pattern);
 	 if (!regcomp(&pattern, expr, 0))  return(LIST(thold));
@@ -100,7 +100,7 @@ struct conscell * bustrfndpat(struct conscell *form)
    char *s;
    if ((form != NULL)&&(form->cdrp == NULL)) {
       if (GetString(form->carp, &s)) {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__MINGW32__)
 	return( regexec(&pattern, s, 0, NULL, 0) ? NULL : LIST(thold) );
 #else
 #        if RE_COMP

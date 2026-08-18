@@ -381,6 +381,7 @@ static int want_sigfpe   = 1;
 /* extern */ int bkhitcount;              /* else it is declared in extra.asm */
 #endif
 
+#   if SIGINTWORKS
 static void brktrap(int sig)                              /* target of SIGINT interrupt */
 {
     (void)sig;
@@ -393,6 +394,7 @@ static void brktrap(int sig)                              /* target of SIGINT in
                return;
     }
 }
+#endif
 
 void brkhit()                                      /* this routine actually processes the INTERRUPT */
 {   bkhitcount = 0;                               /* from the evaluator loop */

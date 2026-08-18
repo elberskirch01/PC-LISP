@@ -21,6 +21,12 @@
 #   ifndef ntohl
 #       define ntohl(x) x
 #   endif
+#   ifndef htonll
+#       define htonll(x) (x)
+#   endif
+#   ifndef ntohll
+#       define ntohll(x) (x)
+#   endif
 #endif
 
 struct sink_s;
@@ -57,7 +63,8 @@ static struct conscell *r_bread(struct sink_s *sink);
  |          AT => atom, AT0..AT40 are atom of length 0..40 respectively
  |          ST => string, ST0..ST40 are strings of length 0..40 respectively
  |          FX1=> 1 byte fixnum
- |          FX => a 4 byte fixnum
+ |          FX4=> a 4 byte fixnum
+ |          FX8=> a 8 byte fixnum
  |          TT => atom 't'
  |          .. => other frequently occurring atoms
  |          HK => hunks
@@ -79,7 +86,7 @@ static struct conscell *r_bread(struct sink_s *sink);
 #define          LD   BASE+3         /* end a list with dotted pair */
 #define          AT   BASE+4         /* a NULL terminated atom */
 #define          ST   BASE+5         /* a NULL terminated string */
-#define          FX   BASE+6         /* a fixnum */
+#define          FX4  BASE+6         /* a 4 byte fixnum */
 #define          FX1  BASE+7         /* 1 byte fixnum */
 #define          FL   BASE+8         /* a floating point number */
 #define          TT   BASE+9         /* atom t */
@@ -115,11 +122,15 @@ static struct conscell *r_bread(struct sink_s *sink);
 #define          CN   STL+1          /* CLISP/NEVAL no eval args code */
 #define          XX   STL+2          /* FIX / FIX cell */
 
+#define          FX8  XX + 1         /* a 8 byte fixnum */
+
 /*
  | These opcodes are unused but reserved for future use, this fills the entire 128..255
  | range completely.
  */
+#if 0
 #define          U1   XX + 1
+#endif
 #define          U2   XX + 2
 #define          U3   XX + 3
 #define          U4   XX + 4
@@ -210,9 +221,19 @@ typedef struct sink_s {
  */
 #define putbyte(_l,_sink)      { putc((_l), (_sink)->fp); }
 #define putlong(_l,_sink)      { long ol = htonl(_l); if (fwrite((char *)&(ol),sizeof(long),1,_sink->fp) != 1)   longjmp(_sink->erh,1);}
+#define putllong(_ll,_sink)      { long long oll = htonll(_ll); if (fwrite((char *)&(oll),sizeof(long long),1,_sink->fp) != 1)   longjmp(_sink->erh,1);}
 #define putint(_l,_sink)       { long ol = htonl(_l); if (fwrite((char *)&(ol),sizeof(long), 1, _sink->fp) != 1)  longjmp(_sink->erh,1);}
 #define putdouble(_d,_sink)    { if (fwrite((char *)&(_d),sizeof(double),1,_sink->fp) != 1) longjmp(_sink->erh,1);}
 #define putstring(_s,_n,_sink) { if (fwrite((_s),(_n),1,(_sink)->fp) != 1)                  longjmp(_sink->erh,1);}
+
+#ifdef LIFIX64
+#define putlifix(_fix,_sing) putllong(_fix,_sink)
+#define getlifix(_sink) getllong (_sink)
+#else
+#define putlifix(_fix,_sink) putlong(_fix,_sink)
+#define getlifix(_sink) getlong (_sink)
+#endif
+
 
 /*
  | Routine to extract an integer that preceeds a given pointer in memory. Word alignment is assumed on the
@@ -300,6 +321,19 @@ static long getlong(SINK *sink)
      longjmp(sink->erh, 1);  /*  doesn't return  */
      return 0L;   /*  keep compiler happy  */
 }
+
+#ifdef LIFIX64
+/*
+ | Leaf read of a long long, on error longjump to error handler.
+ */
+static long long getllong(SINK *sink)
+{    long long l;
+     if (fread((char *)&(l), sizeof(long long), 1, sink->fp) == 1)
+         return((long long)ntohll(l));
+     longjmp(sink->erh, 1);  /*  doesn't return  */
+     return 0ll;   /*  keep compiler happy  */
+}
+#endif
 
 /*
  | Leaf read of an int, on error longjump to error handler.
@@ -452,12 +486,27 @@ static void r_bwrite(struct conscell *e, SINK *sink)
           | fixnums less than 256 are stored as FX1 <byte> if greather than 255 they
           | are stored as FX <long>
           */
-          case FIXATOM   : if ((FIX(e)->atom >= 0) && (FIX(e)->atom <= 0xff)) {
-                               putbyte(FX1, sink); putbyte( (int)(FIX(e)->atom & 0xff), sink);
-                           } else {
-                               putbyte(FX, sink); putlong(FIX(e)->atom, sink);
-                           }
-                           break;
+          case FIXATOM   : {
+	      lifix_t fix = FIX(e)->atom;
+	      if ((fix >= 0) && (fix <= 0xff)) {
+                  putbyte(FX1, sink); 
+		  putbyte( (int)(fix & 0xff), sink);
+              } else if ((fix >= MINLONG) && (fix <= MAXLONG)) {
+                  putbyte(FX4, sink); 
+		  putlong( (long)fix, sink);
+              } 
+#ifdef LIFIX64
+	      else {
+                  putbyte(FX8,sink); 
+		  putllong(fix, sink);
+              }
+#else
+	      else {
+	          goto er;
+              }
+#endif			       
+          }
+          break;
 
          /*
           | fixfix cells are just stored as XX <long> <long>.
@@ -570,7 +619,7 @@ static void r_bwrite(struct conscell *e, SINK *sink)
      return;
 
     /*
-     | Error occurred writing to sink so longjump to sink's error hander.
+     | Error occurred writing to sink so longjump to sink's error handler.
      */
  er: longjmp(sink->erh, 1);
 }
@@ -606,8 +655,12 @@ static struct conscell *r_bread(SINK *sink)
           | hard coded atoms quote, setq ....
           */
           case TT : return(LIST(thold));
-          case FX : return(LIST(newintop(getlong(sink))));
+          case FX4: return(LIST(newintop(getlong(sink))));
           case FX1: return(LIST(newintop((long) (getbyte(sink) & 0xff))));
+#ifdef LIFIX64	  
+          case FX8: return(LIST(newintop(getllong(sink))));
+#else
+#endif
           case FL : return(LIST(newrealop(getdouble(sink))));
           case ST : return(LIST(insertstring(getstring(sink,-1))));
           case AT : return(LIST(CreateInternedAtom(getstring(sink,-1))));

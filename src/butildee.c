@@ -4,7 +4,7 @@
  */
 #include <stdio.h>
 #include <ctype.h>
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
 #include <pwd.h>
 #include <unistd.h>
 #endif
@@ -18,7 +18,7 @@
  */
 struct conscell * butildeexpand(struct conscell *form)
 {
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
    char *s, *t, head[MAXATOMSIZE], work[MAXATOMSIZE];
    struct passwd *pwent;
 
@@ -66,8 +66,9 @@ struct conscell * butildeexpand(struct conscell *form)
           return(LIST(insertstring(work)));
       }
    }
+er:
 #endif
-er:ierror("tilde-expand");  /*  doesn't return  */
+   ierror("tilde-expand");  /*  doesn't return  */
    return NULL;   /*  keep compiler happy  */
 }
 

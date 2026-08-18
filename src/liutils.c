@@ -286,18 +286,35 @@ int GetFloat(struct conscell *l, double *where)
  ** GetFix(l,where) Extract a fixnum from cell 'l'. If it is a fix or real **
  ** cell we store the fix in *where. If not a numberic type return(0).     **
  ****************************************************************************/
-int GetFix(struct conscell *l, long int *where)
+int GetFix64(struct conscell *l, lifix64_t *where)
 {   if (l != NULL)
     {   if (l->celltype == FIXATOM)
-        {   *where = FIX(l)->atom;
+        {   *where = (lifix64_t) FIX(l)->atom;
             return(1);
         };
         if (l->celltype == REALATOM)
-        {   *where = (long) REAL(l)->atom;
+        {   *where = (lifix64_t) REAL(l)->atom;
             return(1);
         };
     };
     return(0);
+}
+
+int GetFix32(struct conscell *l, lifix32_t *where)
+{
+   lifix64_t val = 0; 
+   if (GetFix64 (l, &val)) {
+       if ((val <= MAXLONG) && (val >= MINLONG)) {
+           *where = (lifix32_t) val;
+	   return (1);
+       }
+    }
+    return (0);
+}
+
+int GetFix(struct conscell *l, lifix32_t *where)
+{
+   return (GetFix32 (l, where));
 }
 
 /****************************************************************************
@@ -362,9 +379,9 @@ struct conscell * enlist(struct conscell *x)
 }
 
 /*************************************************************************
- ** newintop: just returns a new cell with long int value it in .       **
+ ** newintop: just returns a new cell with lifix_t value it in .       **
  *************************************************************************/
-struct conscell * newintop(long int val)
+struct conscell * newintop(lifix_t val)
 {      struct fixcell *t;
        t = (struct fixcell *)new(FIXATOM);
        t->atom = val;
